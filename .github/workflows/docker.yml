@@ -1,0 +1,43 @@
+# Builds the container, checks that it reproduces Google Earth Engine, then publishes it to the GitHub
+# container registry:
+#   push to main (code, container or test changes)  ->  ghcr.io/<owner>/s1-gee-parity:main
+#   version tag (v0.1.1, ...)                       ->  ghcr.io/<owner>/s1-gee-parity:<tag>
+# It can also be started by hand from the Actions tab. After the first successful run, set the package
+# visibility to "public" in the GitHub package settings so the openEO backend can pull the image without
+# credentials.
+name: Build, test and publish container
+
+on:
+  push:
+    branches: [main]
+    paths: ["cwl/**", "scripts/**", "tests/**", ".github/workflows/**"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Free disk space for the SNAP image and one test scene
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+
+      - name: Build image
+        run: docker build -t s1-gee-parity -f cwl/Dockerfile .
+
+      - name: Parity test against Google Earth Engine reference pixels
+        run: docker run --rm --entrypoint python3 s1-gee-parity /opt/s1gee/tests/test_parity.py
+
+      - name: Publish
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          TAG="${GITHUB_REF_NAME//\//-}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag s1-gee-parity "ghcr.io/$OWNER/s1-gee-parity:$TAG"
+          docker push "ghcr.io/$OWNER/s1-gee-parity:$TAG"
+          echo "published ghcr.io/$OWNER/s1-gee-parity:$TAG" >> "$GITHUB_STEP_SUMMARY"

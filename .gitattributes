@@ -1,0 +1,6 @@
+* text=auto
+*.tif binary
+*.gz binary
+cwl/Dockerfile text eol=lf
+*.cwl text eol=lf
+*.yml text eol=lf

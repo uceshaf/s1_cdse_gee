@@ -1,0 +1,84 @@
+{
+  "gee_S1A_20250609T052724_C73E_garda.tif": {
+    "scene": "S1A_IW_GRDH_1SDV_20250609T052724_20250609T052749_059565_076523_C73E",
+    "gee_snap_version": "11.0.1",
+    "job": {
+      "spatial_extent": {
+        "west": 10.868,
+        "south": 45.192,
+        "east": 10.911,
+        "north": 45.223
+      },
+      "temporal_extent": [
+        "2025-06-09",
+        "2025-06-10"
+      ],
+      "orbit_direction": "DESCENDING"
+    }
+  },
+  "gee_S1B_20180604T052627_9700.tif": {
+    "scene": "S1B_IW_GRDH_1SDV_20180604T052627_20180604T052652_011219_014975_9700",
+    "gee_snap_version": "6.0.4",
+    "job": {
+      "spatial_extent": {
+        "west": 10.8793,
+        "south": 45.1842,
+        "east": 10.9206,
+        "north": 45.2158
+      },
+      "temporal_extent": [
+        "2018-06-04T05:26:26Z",
+        "2018-06-04T05:26:28Z"
+      ]
+    },
+    "min_share_within_1dn": 0.995
+  },
+  "gee_S1B_20200804T052637_0BF0.tif": {
+    "scene": "S1B_IW_GRDH_1SDV_20200804T052637_20200804T052702_022769_02B36C_0BF0",
+    "gee_snap_version": "7.0.3",
+    "job": {
+      "spatial_extent": {
+        "west": 10.8794,
+        "south": 45.1843,
+        "east": 10.9207,
+        "north": 45.2158
+      },
+      "temporal_extent": [
+        "2020-08-04T05:26:36Z",
+        "2020-08-04T05:26:38Z"
+      ]
+    }
+  },
+  "gee_S1A_20220613T052726_8BC2.tif": {
+    "scene": "S1A_IW_GRDH_1SDV_20220613T052726_20220613T052751_043640_0535D2_8BC2",
+    "gee_snap_version": "8.0.3",
+    "job": {
+      "spatial_extent": {
+        "west": 10.8793,
+        "south": 45.1842,
+        "east": 10.9206,
+        "north": 45.2157
+      },
+      "temporal_extent": [
+        "2022-06-13T05:27:25Z",
+        "2022-06-13T05:27:27Z"
+      ]
+    }
+  },
+  "gee_S1A_20230912T052736_A187.tif": {
+    "scene": "S1A_IW_GRDH_1SDV_20230912T052736_20230912T052801_050290_060DE1_A187",
+    "gee_snap_version": "9.0.0",
+    "job": {
+      "spatial_extent": {
+        "west": 10.8794,
+        "south": 45.1842,
+        "east": 10.9207,
+        "north": 45.2158
+      },
+      "temporal_extent": [
+        "2023-09-12T05:27:35Z",
+        "2023-09-12T05:27:37Z"
+      ]
+    }
+  }
+}
