@@ -21,6 +21,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      VITO_USER: ${{ secrets.VITO_REGISTRY_USER }}    # empty unless the secret is set
     steps:
       - uses: actions/checkout@v5
 
@@ -46,3 +48,19 @@ jobs:
           echo "published ghcr.io/$OWNER/s1-gee-parity:$TAG" >> "$GITHUB_STEP_SUMMARY"
           docker image ls s1-gee-parity >> "$GITHUB_STEP_SUMMARY"
           docker buildx imagetools inspect "ghcr.io/$OWNER/s1-gee-parity:$TAG" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # The CDSE openEO cluster does not pull images from public registries (ghcr.io, Docker Hub); the backend's
+      # own CWL example uses VITO's Artifactory. Runs only when the repository has the secrets
+      # VITO_REGISTRY_USER and VITO_REGISTRY_TOKEN (an Artifactory identity token with deploy rights);
+      # VITO_REGISTRY_IMAGE (a repository variable) overrides the target.
+      - name: Publish to VITO Artifactory
+        env:
+          VITO_TOKEN: ${{ secrets.VITO_REGISTRY_TOKEN }}
+          VITO_IMAGE: ${{ vars.VITO_REGISTRY_IMAGE || 'openeo-docker-local-prod.repo.vito.be/s1-gee-parity' }}
+        if: ${{ env.VITO_USER != '' }}
+        run: |
+          TAG="${GITHUB_REF_NAME//\//-}"
+          echo "$VITO_TOKEN" | docker login "${VITO_IMAGE%%/*}" -u "$VITO_USER" --password-stdin
+          docker tag s1-gee-parity "$VITO_IMAGE:$TAG"
+          docker push "$VITO_IMAGE:$TAG"
+          echo "published $VITO_IMAGE:$TAG" >> "$GITHUB_STEP_SUMMARY"
