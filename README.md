@@ -1,4 +1,4 @@
-# s1-gee-parity
+# s1_cdse_gee
 
 Reproduce Google Earth Engine's Sentinel-1 backscatter (`COPERNICUS/S1_GRD` / `S1_GRD_FLOAT`) outside GEE,
 so openEO workflows get the same pixel values.
@@ -134,7 +134,7 @@ the STAC collection the container writes as a data cube. The backend injects S3 
    ```python
    s1 = connection.datacube_from_process(
        "run_udf", data=None, runtime="EOAP-CWL",
-       udf="https://raw.githubusercontent.com/uceshaf/s1-gee-parity/main/cwl/s1_sigma0_gee.cwl",
+       udf="https://raw.githubusercontent.com/uceshaf/s1_cdse_gee/main/cwl/s1_sigma0_gee.cwl",
        context={"spatial_extent": {"west": 10.86, "south": 45.17, "east": 10.94, "north": 45.23},
                 "temporal_extent": ["2025-06-01", "2025-07-01"], "orbit_direction": "DESCENDING",
                 "match": "exact"})
@@ -149,9 +149,26 @@ skips the near-real-time duplicates (`drop_products_gee_lacks`); compared with G
 and 10 months, 323 products were skipped, none of which GEE holds, and 4 of 1,470 remain different.
 
 Verified here: `run_job.py` end to end on Windows (scene search, reading from `s3://eodata` with personal S3
-keys, orbit rule, processing, STAC); the five regression cases pass with `S1GEE_SOURCE=cdse-s3`. Not verified
-yet: the Linux image, the credentials the backend injects inside the cluster, and how the backend's
-`load_stac` grids the per-scene outputs.
+keys, orbit rule, processing, STAC); the five regression cases pass with `S1GEE_SOURCE=cdse-s3`, and in the
+Linux image on GitHub Actions. Not verified yet: a complete job on the CDSE cluster (the credentials the backend
+injects, and how the backend's `load_stac` grids the per-scene outputs).
+
+What the CDSE cluster needs (found on 17 Nov 2026 with test jobs; `scripts/submit_probe.py`):
+- **A plain image without a build attestation.** `docker build` on GitHub Actions adds a provenance
+  attestation by default (an image index with an `unknown/unknown` platform entry). The cluster never starts
+  such an image: an 18 MB image packaged that way did not start in 20 minutes, while `alpine` started in
+  12 s and cloudinsar's 2.7 GB SNAP image in under 2 minutes. The workflow builds with
+  `--provenance=false --sbom=false`.
+- **Steps shorter than about 30 minutes.** The backend's CWL runner (calrissian) loses track of a container
+  that runs longer and fails the job with `410 Expired: too old resource version`
+  ([calrissian #217](https://github.com/Duke-GCB/calrissian/issues/217), fixed upstream but not deployed on
+  CDSE in November 2026). Keep jobs to a few scenes until the job is split into one step per scene.
+- The backend shows no output of the container. `scripts/submit_probe.py` runs `scripts/cluster_probe.py` in
+  the container (environment, network, S3, one scene with time stamps, all within 14 minutes) and returns its
+  report as the job result; it cancels the job after 20 minutes.
+- Credits seen: about 3 credits per job plus about 0.33 credits per minute that a 12 GB / 2-core container
+  step exists. `examples/cost_comparison.py` runs the same window through this container and through
+  `sigma0-ellipsoid` (2 minutes, 4 credits for 10 scenes of a 3.4 x 3.4 km window) and records both.
 
 Cost: only the output window is computed, and only the image rows it needs are fetched
 (`scripts/partial_stage.py`). A raw scene is two uncompressed images of 880 MB stored row by row; for a

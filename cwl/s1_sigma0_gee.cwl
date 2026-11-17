@@ -5,7 +5,7 @@
 #
 #   cube = connection.datacube_from_process(
 #       "run_udf", data=None, runtime="EOAP-CWL",
-#       udf="https://raw.githubusercontent.com/uceshaf/s1-gee-parity/main/cwl/s1_sigma0_gee.cwl",
+#       udf="https://raw.githubusercontent.com/uceshaf/s1_cdse_gee/main/cwl/s1_sigma0_gee.cwl",
 #       context={"spatial_extent": {"west": 10.86, "south": 45.17, "east": 10.94, "north": 45.23},
 #                "temporal_extent": ["2025-06-01", "2025-07-01"],
 #                "orbit_direction": "DESCENDING"})
@@ -16,7 +16,9 @@
 # Local run:  cwltool --preserve-environment AWS_ACCESS_KEY_ID --preserve-environment AWS_SECRET_ACCESS_KEY \
 #                     --preserve-environment AWS_ENDPOINT_URL_S3 cwl/s1_sigma0_gee.cwl inputs.json
 #
-# NOT YET RUN on a cluster. "main" is the latest build; for a fixed version use a release tag in both the
+# Not yet run to completion on the CDSE cluster (see README, "Running inside openEO"). Keep a job to a few
+# scenes: the backend's CWL runner fails steps that run longer than about 30 minutes.
+# "main" is the latest build; for a fixed version use a release tag in both the
 # URL above and the image below.
 cwlVersion: v1.2
 class: CommandLineTool

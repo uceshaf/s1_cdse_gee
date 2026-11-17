@@ -1,10 +1,11 @@
 """Get Google-Earth-Engine-identical Sentinel-1 sigma0 from an openEO batch job on the Copernicus Data Space.
 
-NOT YET RUN: it needs the published container image (see README, "Running inside openEO").
+Not yet run to completion on the CDSE cluster (see README, "Running inside openEO"). Keep a job to a few scenes:
+the backend's CWL runner fails container steps that run longer than about 30 minutes.
 """
 import openeo
 
-CWL = "https://raw.githubusercontent.com/uceshaf/s1-gee-parity/main/cwl/s1_sigma0_gee.cwl"
+CWL = "https://raw.githubusercontent.com/uceshaf/s1_cdse_gee/main/cwl/s1_sigma0_gee.cwl"
 
 connection = openeo.connect("openeo.dataspace.copernicus.eu").authenticate_oidc()
 

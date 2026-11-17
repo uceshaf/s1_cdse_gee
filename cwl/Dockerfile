@@ -22,23 +22,33 @@ RUN apt-get -qq update && \
 
 COPY scripts/install_snap_snapshot.py /opt/s1gee/build/
 
-# Only the SNAP engine and the Sentinel-1 toolbox are used. The image is about 5 GB; removing the optical
-# toolbox folders (s2tbx, s3tbx) of each install would save about a third (not tried).
+# Only the SNAP engine and the Sentinel-1 (microwave) toolbox are used. The optical toolboxes (s2tbx, s3tbx;
+# opttbx in SNAP 11) and the updater's backup copies of replaced modules are removed in the same step as each
+# install, otherwise they stay in the image layer: no radar or core module depends on them (checked on the
+# module manifests of all four versions), and tests/test_parity.py checks the result. The openEO cluster did
+# not manage to start the first image (4.6 GB compressed, about 11 GB unpacked) within 20 minutes, while
+# smaller images start in seconds.
+# slim <install> <toolbox folders...>: remove the folders, their lines in etc/snap.clusters and update backups
+RUN printf '%s\n' '#!/bin/sh' 'set -eu' 'home=$1; shift' \
+      'for t in "$@"; do rm -rf "$home/$t"; sed -i "/^$t\$/d" "$home/etc/snap.clusters"; done' \
+      'rm -rf "$home"/*/update/backup /root/.snap' > /usr/local/bin/slim_snap && chmod +x /usr/local/bin/slim_snap
+
 # --- SNAP 7.0.0: the installer as it is (bit-identical to GEE's 7.0.3 on the test scene)
 RUN wget -q -O /tmp/snap.sh https://step.esa.int/downloads/7.0/installers/esa-snap_sentinel_unix_7_0.sh && \
     sh /tmp/snap.sh -q -dir /opt/snap/7.0.0 && rm /tmp/snap.sh && \
-    rm -rf /root/.snap
+    slim_snap /opt/snap/7.0.0 s2tbx s3tbx
 
 # --- SNAP 8.0.3: 8.0 installer, then ESA's update snapshot of 19 May 2021
 RUN wget -q -O /tmp/snap.sh https://download.esa.int/step/snap/8.0/installers/esa-snap_sentinel_unix_8_0.sh && \
     sh /tmp/snap.sh -q -dir /opt/snap/8.0.3 && rm /tmp/snap.sh && \
     python3 /opt/s1gee/build/install_snap_snapshot.py /opt/snap/8.0.3 8.0_20210519-131352 && \
-    rm -rf /opt/snap/nbm_* /root/.snap
+    rm -rf /opt/snap/nbm_* && \
+    slim_snap /opt/snap/8.0.3 s2tbx s3tbx
 
 # --- SNAP 9.0.0: the installer as it is
 RUN wget -q -O /tmp/snap.sh https://download.esa.int/step/snap/9.0/installers/esa-snap_sentinel_unix_9_0_0.sh && \
     sh /tmp/snap.sh -q -dir /opt/snap/9.0.0 && rm /tmp/snap.sh && \
-    rm -rf /root/.snap
+    slim_snap /opt/snap/9.0.0 s2tbx s3tbx
 
 # --- SNAP 11.0.1: 11.0.0 installer, then update the modules.
 # `snap --modules --update-all` does not exit by itself: wait until it reports that nothing is left
@@ -53,14 +63,16 @@ RUN wget -q -O /tmp/snap.sh https://download.esa.int/step/snap/11.0/installers/e
       sleep 3; kill -TERM "$pid" 2>/dev/null || true; wait "$pid" || true; \
       echo "--- update attempt $attempt:"; { grep -v "^$" /tmp/snap_update.log | uniq | tail -30; } || true; \
     done; \
-    rm -rf /root/.snap /tmp/snap_update.log
+    rm -f /tmp/snap_update.log && \
+    slim_snap /opt/snap/11.0.1 opttbx
 
 # Fail the build if a calibration module is not the expected build (a different build changes the numbers).
 RUN check() { unzip -p "$1" META-INF/MANIFEST.MF | tr -d '\r' | grep -x "OpenIDE-Module-Specification-Version: $2"; }; \
     check /opt/snap/7.0.0/s1tbx/modules/org-esa-s1tbx-s1tbx-op-calibration.jar 7.0.0 && \
     check /opt/snap/8.0.3/s1tbx/modules/org-esa-s1tbx-s1tbx-op-calibration.jar 8.0.3 && \
     check /opt/snap/9.0.0/s1tbx/modules/org-esa-s1tbx-s1tbx-op-calibration.jar 9.0.0 && \
-    check /opt/snap/11.0.1/microwavetbx/modules/eu-esa-microwavetbx-sar-op-calibration.jar 11.0.1
+    check /opt/snap/11.0.1/microwavetbx/modules/eu-esa-microwavetbx-sar-op-calibration.jar 11.0.1 && \
+    du -sh /opt/snap/*
 
 # Java heap for gpt: the installers size it for the build machine; fix it for the job container instead.
 RUN for v in 7.0.0 8.0.3 9.0.0 11.0.1; do \

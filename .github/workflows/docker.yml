@@ -27,8 +27,11 @@ jobs:
       - name: Free disk space for the SNAP image and one test scene
         run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
 
+      # A plain single-platform image: without --provenance=false the build adds an attestation entry
+      # ("unknown/unknown" platform), which the published image of 16 Nov 2026 had and which
+      # cloudinsar's images, known to run on the openEO cluster, do not have.
       - name: Build image
-        run: docker build -t s1-gee-parity -f cwl/Dockerfile .
+        run: docker build --provenance=false --sbom=false -t s1-gee-parity -f cwl/Dockerfile .
 
       - name: Parity test against Google Earth Engine reference pixels
         run: docker run --rm --entrypoint python3 s1-gee-parity /opt/s1gee/tests/test_parity.py
@@ -41,3 +44,5 @@ jobs:
           docker tag s1-gee-parity "ghcr.io/$OWNER/s1-gee-parity:$TAG"
           docker push "ghcr.io/$OWNER/s1-gee-parity:$TAG"
           echo "published ghcr.io/$OWNER/s1-gee-parity:$TAG" >> "$GITHUB_STEP_SUMMARY"
+          docker image ls s1-gee-parity >> "$GITHUB_STEP_SUMMARY"
+          docker buildx imagetools inspect "ghcr.io/$OWNER/s1-gee-parity:$TAG" | tee -a "$GITHUB_STEP_SUMMARY"
