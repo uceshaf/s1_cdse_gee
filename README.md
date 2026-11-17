@@ -154,11 +154,13 @@ Linux image on GitHub Actions. Not verified yet: a complete job on the CDSE clus
 injects, and how the backend's `load_stac` grids the per-scene outputs).
 
 What the CDSE cluster needs (found on 17 Nov 2026 with test jobs; `scripts/submit_probe.py`):
-- **A plain image without a build attestation.** `docker build` on GitHub Actions adds a provenance
-  attestation by default (an image index with an `unknown/unknown` platform entry). The cluster never starts
-  such an image: an 18 MB image packaged that way did not start in 20 minutes, while `alpine` started in
-  12 s and cloudinsar's 2.7 GB SNAP image in under 2 minutes. The workflow builds with
-  `--provenance=false --sbom=false`.
+- **An image the cluster can pull — not solved yet.** No image that the cluster has to download has
+  started, from any registry: this image (with and without build attestation, 4.6 and 2.4 GB), and small
+  public images from ghcr.io (`containerd/busybox`, `home-assistant/amd64-base`) and Docker Hub
+  (`busybox:1.36.1-uclibc`) all stayed waiting for 12-20 minutes. Only images the cluster already holds
+  started: `alpine:3.17.0` (the CWL runner's default container) in 12 s and cloudinsar's
+  `ghcr.io/cloudinsar/openeo_insar:20260617T1217` in under 2 minutes. The image has to be made pullable on
+  the CDSE side (allow-list or mirror); this needs CDSE support.
 - **Steps shorter than about 30 minutes.** The backend's CWL runner (calrissian) loses track of a container
   that runs longer and fails the job with `410 Expired: too old resource version`
   ([calrissian #217](https://github.com/Duke-GCB/calrissian/issues/217), fixed upstream but not deployed on

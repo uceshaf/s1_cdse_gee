@@ -70,8 +70,14 @@ def main() -> None:
         print(name, job.job_id, flush=True)
 
     pending = dict(jobs)
+    started = time.time()
     while pending:
         time.sleep(30)
+        if time.time() - started > 40 * 60:              # never let a stuck job run up credits
+            for name, job in pending.items():
+                print(time.strftime("%H:%M:%S"), name, "cancelled after 40 min", flush=True)
+                job.stop()
+            started = float("inf")
         for name, job in list(pending.items()):
             try:
                 info = job.describe()
